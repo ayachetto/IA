@@ -307,7 +307,11 @@ class CornersProblem(search.SearchProblem):
         '''
             INSÉREZ VOTRE SOLUTION À LA QUESTION 5 ICI
         '''
-        return self.startingPosition
+        #return self.startingPosition
+        visitedCorners = tuple()
+        if self.startingPosition in self.corners:
+            visitedCorners = (self.startingPosition,)
+        return (self.startingPosition, visitedCorners)
         
         util.raiseNotDefined()
 
@@ -319,21 +323,9 @@ class CornersProblem(search.SearchProblem):
         '''
             INSÉREZ VOTRE SOLUTION À LA QUESTION 5 ICI
         '''
-        if state in self.corners:
-            self.corners = tuple(item for item in self.corners if item != state)
-        isGoal = self.corners == ()
-        print(self.corners, 'hihi')
-        print(isGoal)
-
-        # For display purposes only
-        if isGoal:
-            self._visitedlist.append(state)
-            import __main__
-            if '_display' in dir(__main__):
-                if 'drawExpandedCells' in dir(__main__._display): #@UndefinedVariable
-                    __main__._display.drawExpandedCells(self._visitedlist) #@UndefinedVariable
-
-        return isGoal
+        
+        position, visitedCorners = state
+        return len(visitedCorners) == 4
 
         util.raiseNotDefined()
 
@@ -349,6 +341,7 @@ class CornersProblem(search.SearchProblem):
         """
 
         successors = []
+        (x,y), visitedCorners = state
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
             # Add a successor state to the successor list if the action is legal
             # Here's a code snippet for figuring out whether a new position hits a wall:
@@ -360,19 +353,19 @@ class CornersProblem(search.SearchProblem):
             '''
                 INSÉREZ VOTRE SOLUTION À LA QUESTION 5 ICI
             '''
-            x,y = state
             dx, dy = Actions.directionToVector(action)
             nextx, nexty = int(x + dx), int(y + dy)
             if not self.walls[nextx][nexty]:
                 nextState = (nextx, nexty)
-                #cost = 1
-                cost = self.getCostOfActions([Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST])
-                successors.append( ( nextState, action, cost) )
+                newVisitedCorners = list(visitedCorners)
+                if nextState in self.corners and nextState not in newVisitedCorners:
+                    newVisitedCorners.append(nextState)
+
+                successor = (nextState, tuple(newVisitedCorners))
+                successors.append((successor, action, 1))
 
         # Bookkeeping for display purposes
         self._expanded += 1 # DO NOT CHANGE
-        if state not in self._visitedlist:
-            self._visitedlist.append(state)
 
         return successors
 
@@ -408,8 +401,39 @@ def cornersHeuristic(state, problem):
     '''
         INSÉREZ VOTRE SOLUTION À LA QUESTION 6 ICI
     '''
+    position, visitedCorners = state
+    #corners = problem.corners
+
+    # Coins restants
+    unvisited = [c for c in corners if c not in visitedCorners]
+    if not unvisited:
+        return 0
+
+    # Distance du Pacman au coin le plus proche
+    start_cost = min(util.manhattanDistance(position, c) for c in unvisited)
+
+    # Construire un arbre couvrant minimal (MST) entre coins restants
+    import itertools
+    edges = [(util.manhattanDistance(c1, c2), c1, c2)
+             for c1, c2 in itertools.combinations(unvisited, 2)]
+    edges.sort()
+
+    parent = {c: c for c in unvisited}
+
+    def find(c):
+        while parent[c] != c:
+            c = parent[c]
+        return c
+
+    mst_cost = 0
+    for dist, c1, c2 in edges:
+        if find(c1) != find(c2):
+            parent[find(c1)] = find(c2)
+            mst_cost += dist
+
+    return start_cost + mst_cost
     
-    return 0
+    #return 0
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
