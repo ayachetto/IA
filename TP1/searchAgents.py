@@ -36,6 +36,7 @@ description for details.
 
 Good luck and happy searching!
 """
+from collections import deque
 
 from game import Directions
 from game import Agent
@@ -312,8 +313,6 @@ class CornersProblem(search.SearchProblem):
         if self.startingPosition in self.corners:
             visitedCorners = (self.startingPosition,)
         return (self.startingPosition, visitedCorners)
-        
-        util.raiseNotDefined()
 
     def isGoalState(self, state):
         """
@@ -326,8 +325,6 @@ class CornersProblem(search.SearchProblem):
         
         position, visitedCorners = state
         return len(visitedCorners) == 4
-
-        util.raiseNotDefined()
 
     def getSuccessors(self, state):
         """
@@ -432,8 +429,7 @@ def cornersHeuristic(state, problem):
             mst_cost += dist
 
     return start_cost + mst_cost
-    
-    #return 0
+
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
@@ -497,6 +493,72 @@ class AStarFoodSearchAgent(SearchAgent):
         self.searchFunction = lambda prob: search.aStarSearch(prob, foodHeuristic)
         self.searchType = FoodSearchProblem
 
+def _maze_dist(walls, start, goal, dist_cache):
+    if start == goal:
+        return 0
+
+    cache_key = (start, goal) if start <= goal else (goal, start)
+    if cache_key in dist_cache:
+        return dist_cache[cache_key]
+
+    width, height = walls.width, walls.height
+    queue = deque([start])
+    visited = {start: 0}
+
+    while queue:
+        x, y = queue.popleft()
+        current_dist = visited[(x, y)] + 1
+
+        for dx, dy in ((1,0), (-1,0), (0,1), (0,-1)):
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < width and 0 <= ny < height and not walls[nx][ny]:
+                neighbor = (nx, ny)
+                if neighbor not in visited:
+                    if neighbor == goal:
+                        dist_cache[cache_key] = current_dist
+                        return current_dist
+                    visited[neighbor] = current_dist
+                    queue.append(neighbor)
+
+    dist_cache[cache_key] = float('inf')
+    return dist_cache[cache_key]
+
+
+def _mst_cost(food_positions, walls, dist_cache, mst_cache):
+    key = frozenset(food_positions)
+    if key in mst_cache:
+        return mst_cache[key]
+
+    positions = list(food_positions)
+    if len(positions) <= 1:
+        mst_cache[key] = 0
+        return 0
+
+    # Prim's algorithm
+    in_tree = [False] * len(positions)
+    min_edge_cost = [float('inf')] * len(positions)
+    min_edge_cost[0] = 0
+    total_cost = 0
+
+    for _ in range(len(positions)):
+        current_index = min(
+            (i for i in range(len(positions)) if not in_tree[i]),
+            key=lambda i: min_edge_cost[i]
+        )
+        in_tree[current_index] = True
+        total_cost += min_edge_cost[current_index]
+
+        current_pos = positions[current_index]
+        for i in range(len(positions)):
+            if not in_tree[i]:
+                dist = _maze_dist(walls, current_pos, positions[i], dist_cache)
+                if dist < min_edge_cost[i]:
+                    min_edge_cost[i] = dist
+
+    mst_cache[key] = total_cost
+    return total_cost
+
+
 def foodHeuristic(state, problem: FoodSearchProblem):
     """
     Your heuristic for the FoodSearchProblem goes here.
@@ -531,6 +593,31 @@ def foodHeuristic(state, problem: FoodSearchProblem):
         INSÉREZ VOTRE SOLUTION À LA QUESTION 7 ICI
     '''
 
+    foods = foodGrid.asList()
+    if not foods:
+        return 0
 
-    return 0
+    H = problem.heuristicInfo
+    walls = problem.walls
 
+    dist_cache = H.setdefault('dist_cache', {})
+    mst_cache = H.setdefault('mst_cache', {})
+
+    d_start_min = float('inf')
+    d_start_max = 0
+    for f in foods:
+        d = _maze_dist(walls, position, f, dist_cache)
+        if d < d_start_min: d_start_min = d
+        if d > d_start_max: d_start_max = d
+
+    mst_foods = _mst_cost(foods, walls, dist_cache, mst_cache)
+
+    fs = list(foods)
+    for i in range(len(fs)):
+        for j in range(i + 1, len(fs)):
+            dij = _maze_dist(walls, fs[i], fs[j], dist_cache)
+
+    h_attach_mst = d_start_min + mst_foods
+    h_farthest = d_start_max
+
+    return max(h_attach_mst, h_farthest)
