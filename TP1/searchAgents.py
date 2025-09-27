@@ -617,11 +617,6 @@ def foodHeuristic(state, problem: FoodSearchProblem):
 
     mst_foods = _mst_cost(foods, walls, dist_cache, mst_cache)
 
-    fs = list(foods)
-    for i in range(len(fs)):
-        for j in range(i + 1, len(fs)):
-            dij = _maze_dist(walls, fs[i], fs[j], dist_cache)
-
     h_attach_mst = d_start_min + mst_foods
     h_farthest = d_start_max
 
