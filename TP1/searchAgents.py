@@ -399,7 +399,6 @@ def cornersHeuristic(state, problem):
         INSÉREZ VOTRE SOLUTION À LA QUESTION 6 ICI
     '''
     position, visitedCorners = state
-    #corners = problem.corners
 
     # Coins restants
     unvisited = [c for c in corners if c not in visitedCorners]
@@ -410,9 +409,15 @@ def cornersHeuristic(state, problem):
     start_cost = min(util.manhattanDistance(position, c) for c in unvisited)
 
     # Construire un arbre couvrant minimal (MST) entre coins restants
-    import itertools
-    edges = [(util.manhattanDistance(c1, c2), c1, c2)
-             for c1, c2 in itertools.combinations(unvisited, 2)]
+
+    edges = []
+
+    for i in range(len(unvisited)):
+        for j in range(i + 1, len(unvisited)):
+            c1 = unvisited[i]
+            c2 = unvisited[j]
+            edges.append((util.manhattanDistance(c1, c2), c1, c2))
+
     edges.sort()
 
     parent = {c: c for c in unvisited}

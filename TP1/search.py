@@ -111,7 +111,6 @@ def depthFirstSearch(problem:SearchProblem)->List[Direction]:
         state, path = L.pop()
         
         if problem.isGoalState(state):
-            print(path)
             return path
         
         if state not in visited:
@@ -146,7 +145,6 @@ def breadthFirstSearch(problem:SearchProblem)->List[Direction]:
         state, path = L.pop()
         
         if problem.isGoalState(state):
-            print(path)
             return path
         
         if state not in visited:
@@ -179,7 +177,6 @@ def uniformCostSearch(problem:SearchProblem)->List[Direction]:
         state, path, cost = L.pop()
         
         if problem.isGoalState(state):
-            print(path)
             return path
         
         if state not in visited or cost < visited[state]:
@@ -193,8 +190,6 @@ def uniformCostSearch(problem:SearchProblem)->List[Direction]:
                     new_path = path + [action]
                     L.push((successor, new_path, new_cost), new_cost)
     return []
-
-    util.raiseNotDefined()
 
 def nullHeuristic(state:GameState, problem:SearchProblem=None)->List[Direction]:
     """
@@ -219,7 +214,6 @@ def aStarSearch(problem:SearchProblem, heuristic=nullHeuristic)->List[Direction]
         state, path, cost = L.pop()
         
         if problem.isGoalState(state):
-            print(path)
             return path
         
         if state not in visited or cost < visited[state]:
@@ -234,8 +228,6 @@ def aStarSearch(problem:SearchProblem, heuristic=nullHeuristic)->List[Direction]
                     priority = new_cost + heuristic(successor, problem)
                     L.push((successor, new_path, new_cost), priority)
     return []
-
-    util.raiseNotDefined()
 
 
 # Abbreviations
