@@ -4,6 +4,9 @@ from schedule import Schedule
 import solver_naive
 import solver_advanced
 
+# python3 main.py --agent=advanced --infile=instances/horaire_A_11_20.txt
+# python autograder.py
+
 def parse_arguments():
     parser = argparse.ArgumentParser()
 
