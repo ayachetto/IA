@@ -37,7 +37,25 @@ var int: fin_projet;
 % Partie étudiant
 %-----------------------------------------------------------------------------%
 
+constraint
+    forall(i in 1..n) (
+        fin_tache[i] = debut_tache[i] + duree_tache[i] - 1
+    ); % La fin = début + durée - 1
 
+constraint
+    fin_projet = max(fin_tache); % Le projet se termine à la fin de la dernière tâche
+
+% À tout moment, la somme des ressources utilisées <= limite
+constraint
+    cumulative(debut_tache, duree_tache, ressource_tache, limite);
+
+% Pas plus de 2 tâches ne peuvent commencer à la même heure
+constraint
+    forall(t in 1..m) (
+        sum(i in 1..n)(debut_tache[i] = t) <= 2
+    );
+
+solve minimize fin_projet;
 %-----------------------------------------------------------------------------%
 
 output [
