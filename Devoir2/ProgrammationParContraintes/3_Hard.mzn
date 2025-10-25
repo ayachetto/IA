@@ -49,8 +49,6 @@ var int: temps_trajet;
 % Partie étudiant
 %-----------------------------------------------------------------------------%
 
-% Circuit Hamiltonien
-constraint circuit(circuit_tournee);
 
 % Toutes les villes sont visitées exactement une fois
 constraint chemin_tournee[1] = 1; % Départ à la ville 1
@@ -60,14 +58,11 @@ constraint all_different(chemin_tournee);
 constraint cumul_temps[1] = 0;
 constraint temps_attente[1] = 0;
 
-constraint
-  forall(i in 2..n) (
-    let {
-      var int: ville_prec = chemin_tournee[i-1],
-      var int: ville_curr = chemin_tournee[i]
-    } in
-      cumul_temps[i] = cumul_temps[i-1] + distance[ville_prec, ville_curr] + temps_attente[i]
-  );
+constraint forall(i in 2..n) (
+    cumul_temps[i] = cumul_temps[i-1]
+                   + distance[chemin_tournee[i-1], chemin_tournee[i]]
+                   + temps_attente[i]
+);
 
 % Fenêtres de temps et temps d’attente
 constraint
@@ -76,26 +71,30 @@ constraint
     cumul_temps[i] <= fenetre_arrivee[chemin_tournee[i], 2]
   );
 
-constraint
-  forall(i in 2..n) (
-    temps_attente[i] = max(0, fenetre_arrivee[chemin_tournee[i],1] - (cumul_temps[i-1] + distance[chemin_tournee[i-1], chemin_tournee[i]]))
-  );
+constraint forall(i in 2..n) (
+    temps_attente[i] >= fenetre_arrivee[chemin_tournee[i],1]
+                       - (cumul_temps[i-1] + distance[chemin_tournee[i-1], chemin_tournee[i]])
+    /\
+    temps_attente[i] >= 0
+);
 
 % Bornes redondantes pour accélérer le solveur
-constraint
-  forall(i in 2..n) (
-    cumul_temps[i] >= cumul_temps[i-1] + min_val
-  );
+constraint forall(i in 2..n)(
+    cumul_temps[i] >= cumul_temps[i-1] + min_val /\
+    cumul_temps[i] <= fenetre_arrivee[chemin_tournee[i],2]
+);
 
 % Temps de trajet total (incluant retour à la ville de départ)
 constraint temps_trajet = cumul_temps[n] + distance[chemin_tournee[n], chemin_tournee[1]];
 
-solve :: int_search(
-    chemin_tournee,
-    first_fail,
-    indomain_min,
-    complete
-) minimize temps_trajet;
+
+%solve :: seq_search([
+    %int_search(chemin_tournee, input_order, indomain_min, complete),
+    %int_search(cumul_temps, input_order, indomain_min, complete),
+    %int_search(temps_attente, input_order, indomain_min, complete)
+%])
+%minimize temps_trajet;
+solve satisfy;
 %-----------------------------------------------------------------------------%
 
 output [
