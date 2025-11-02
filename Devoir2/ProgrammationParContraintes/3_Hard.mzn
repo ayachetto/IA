@@ -1,5 +1,5 @@
-% NOM_ETUDIANT_1 (MATRICULE_1)
-% NOM_ETUDIANT_2 (MATRICULE_2)
+% Aya Chetto (2194547)
+% Camille Ménard (2214742)
 
 include "globals.mzn"; 
 
@@ -50,6 +50,45 @@ var int: temps_trajet;
 %-----------------------------------------------------------------------------%
 
 
+% Toutes les villes sont visitées exactement une fois
+constraint chemin_tournee[1] = 1; % Départ à la ville 1
+constraint all_different(chemin_tournee);
+
+% Calcul du cumul de temps avec attente
+constraint cumul_temps[1] = 0;
+constraint temps_attente[1] = 0;
+
+constraint forall(i in 2..n) (
+    cumul_temps[i] = cumul_temps[i-1]
+                   + distance[chemin_tournee[i-1], chemin_tournee[i]]
+                   + temps_attente[i]
+);
+
+% Fenêtres de temps et temps d’attente
+constraint
+  forall(i in 1..n) (
+    cumul_temps[i] >= fenetre_arrivee[chemin_tournee[i], 1] /\
+    cumul_temps[i] <= fenetre_arrivee[chemin_tournee[i], 2]
+  );
+
+constraint forall(i in 2..n) (
+    temps_attente[i] >= fenetre_arrivee[chemin_tournee[i],1]
+                       - (cumul_temps[i-1] + distance[chemin_tournee[i-1], chemin_tournee[i]])
+    /\
+    temps_attente[i] >= 0
+);
+
+% Bornes redondantes pour accélérer le solveur
+constraint forall(i in 2..n)(
+    cumul_temps[i] >= cumul_temps[i-1] + min_val /\
+    cumul_temps[i] <= fenetre_arrivee[chemin_tournee[i],2]
+);
+
+% Temps de trajet total (incluant retour à la ville de départ)
+constraint temps_trajet = cumul_temps[n] + distance[chemin_tournee[n], chemin_tournee[1]];
+
+
+solve satisfy;
 %-----------------------------------------------------------------------------%
 
 output [
