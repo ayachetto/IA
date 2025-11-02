@@ -1,5 +1,5 @@
-% NOM_ETUDIANT_1 (MATRICULE_1)
-% NOM_ETUDIANT_2 (MATRICULE_2)
+% Aya Chetto (2194547)
+% Camille Ménard (2214742)
 
 include "globals.mzn"; 
 
@@ -88,12 +88,6 @@ constraint forall(i in 2..n)(
 constraint temps_trajet = cumul_temps[n] + distance[chemin_tournee[n], chemin_tournee[1]];
 
 
-%solve :: seq_search([
-    %int_search(chemin_tournee, input_order, indomain_min, complete),
-    %int_search(cumul_temps, input_order, indomain_min, complete),
-    %int_search(temps_attente, input_order, indomain_min, complete)
-%])
-%minimize temps_trajet;
 solve satisfy;
 %-----------------------------------------------------------------------------%
 

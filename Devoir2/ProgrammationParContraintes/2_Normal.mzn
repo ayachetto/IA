@@ -1,5 +1,5 @@
-% NOM_ETUDIANT_1 (MATRICULE_1)
-% NOM_ETUDIANT_2 (MATRICULE_2)
+% Aya Chetto (2194547)
+% Camille Ménard (2214742)
 
 include "globals.mzn"; 
 

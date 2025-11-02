@@ -1,3 +1,6 @@
+# Aya Chetto (2194547)
+# Camille Ménard (2214742)
+
 from schedule import Schedule
 import random
 import math
