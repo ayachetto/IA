@@ -153,6 +153,23 @@ class DigitClassificationModel(object):
     def __init__(self) -> None:
         # Initialize your model parameters here
         "*** TODO: COMPLETE HERE FOR QUESTION 3 ***"
+        # Hyperparamètres dans les intervalles recommandés
+        self.hidden_size1 = 400   # [10, 400]
+        self.hidden_size2 = 200   # [10, 400]
+        self.learning_rate = 0.1  # [0.001, 1.0]
+        self.batch_size = 100     # doit diviser la taille du dataset (dans leur setup c'est prévu)
+
+        # Paramètres couche 1 : 784 -> hidden_size1
+        self.W1 = nn.Parameter(784, self.hidden_size1)
+        self.b1 = nn.Parameter(1, self.hidden_size1)
+
+        # Paramètres couche 2 : hidden_size1 -> hidden_size2
+        self.W2 = nn.Parameter(self.hidden_size1, self.hidden_size2)
+        self.b2 = nn.Parameter(1, self.hidden_size2)
+
+        # Paramètres sortie : hidden_size2 -> 10
+        self.W3 = nn.Parameter(self.hidden_size2, 10)
+        self.b3 = nn.Parameter(1, 10)
 
     def run(self, x: nn.Constant) -> nn.Node:
         """
@@ -169,6 +186,20 @@ class DigitClassificationModel(object):
                 (also called logits)
         """
         "*** TODO: COMPLETE HERE FOR QUESTION 3 ***"
+        # Couche 1
+        h1 = nn.Linear(x, self.W1)   # (batch_size x hidden_size1)
+        h1 = nn.AddBias(h1, self.b1)
+        h1 = nn.ReLU(h1)
+
+        # Couche 2
+        h2 = nn.Linear(h1, self.W2)  # (batch_size x hidden_size2)
+        h2 = nn.AddBias(h2, self.b2)
+        h2 = nn.ReLU(h2)
+
+        # Couche de sortie
+        out = nn.Linear(h2, self.W3)  # (batch_size x 10)
+        out = nn.AddBias(out, self.b3)
+        return out
 
     def get_loss(self, x: nn.Constant, y: nn.Constant) -> nn.Node:
         """
@@ -184,9 +215,48 @@ class DigitClassificationModel(object):
         Returns: a loss node
         """
         "*** TODO: COMPLETE HERE FOR QUESTION 3 ***"
+        logits = self.run(x)
+        return nn.SoftmaxLoss(logits, y)
 
     def train(self, dataset: DigitClassificationDataset) -> None:
         """
         Trains the model.
         """
         "*** TODO: COMPLETE HERE FOR QUESTION 3 ***"
+        params = [self.W1, self.b1,
+                  self.W2, self.b2,
+                  self.W3, self.b3]
+
+        max_steps = 20000          # assez long pour bien converger
+        eval_every = 100           # fréquence d'évaluation sur la validation
+        best_val = 0.0
+        steps_since_improve = 0
+        patience = 20              # nombre d'évaluations sans amélioration avant d'arrêter
+
+        it = dataset.iterate_forever(self.batch_size)
+
+        for step in range(max_steps):
+            x_batch, y_batch = next(it)
+
+            # Calcul loss + gradients
+            loss = self.get_loss(x_batch, y_batch)
+            grads = nn.gradients(loss, params)
+
+            # Descente de gradient
+            for p, g in zip(params, grads):
+                p.update(g, -self.learning_rate)
+
+            # On surveille la validation périodiquement
+            if (step + 1) % eval_every == 0:
+                val_acc = dataset.get_validation_accuracy()
+
+                # Si amélioration, on met à jour
+                if val_acc > best_val:
+                    best_val = val_acc
+                    steps_since_improve = 0
+                else:
+                    steps_since_improve += 1
+
+                # Early stopping si plus d'amélioration depuis longtemps
+                if steps_since_improve >= patience and best_val >= 0.97:
+                    break
