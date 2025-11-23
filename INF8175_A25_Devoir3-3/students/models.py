@@ -69,6 +69,18 @@ class RegressionModel(object):
     def __init__(self) -> None:
         # Initialize your model parameters here
         "*** TODO: COMPLETE HERE FOR QUESTION 2 ***"
+        self.hidden_size = 64
+
+        self.w1 = nn.Parameter(1, self.hidden_size)
+        self.b1 = nn.Parameter(1, self.hidden_size)
+
+        self.w2 = nn.Parameter(self.hidden_size, self.hidden_size)
+        self.b2 = nn.Parameter(1, self.hidden_size)
+
+        self.w3 = nn.Parameter(self.hidden_size, 1)
+        self.b3 = nn.Parameter(1, 1)
+
+        self.parameters = [self.w1, self.b1, self.w2, self.b2, self.w3, self.b3]
 
     def run(self, x: nn.Constant) -> nn.Node:
         """
@@ -80,6 +92,12 @@ class RegressionModel(object):
             A node with shape (batch_size x 1) containing predicted y-values
         """
         "*** TODO: COMPLETE HERE FOR QUESTION 2 ***"
+        def affine(inp, weight, bias):
+            return nn.AddBias(nn.Linear(inp, weight), bias)
+
+        layer1 = nn.ReLU(affine(x, self.w1, self.b1))
+        layer2 = nn.ReLU(affine(layer1, self.w2, self.b2))
+        return affine(layer2, self.w3, self.b3)
 
     def get_loss(self, x: nn.Constant, y: nn.Constant) -> nn.Node:
         """
@@ -92,12 +110,29 @@ class RegressionModel(object):
         Returns: a loss node
         """
         "*** TODO: COMPLETE HERE FOR QUESTION 2 ***"
+        predictions = self.run(x)
+        return nn.SquareLoss(predictions, y)
 
     def train(self, dataset: RegressionDataset) -> None:
         """
         Trains the model.
         """
         "*** TODO: COMPLETE HERE FOR QUESTION 2 ***"
+        batch_size = 20
+        learning_rate = 0.05
+        target_loss = 0.02
+        max_epochs = 2000
+
+        for _ in range(max_epochs):
+            for x_batch, y_batch in dataset.iterate_once(batch_size):
+                loss = self.get_loss(x_batch, y_batch)
+                grads = nn.gradients(loss, self.parameters)
+                for parameter, grad in zip(self.parameters, grads):
+                    parameter.update(grad, -learning_rate)
+
+            full_loss = self.get_loss(nn.Constant(dataset.x), nn.Constant(dataset.y))
+            if nn.as_scalar(full_loss) <= target_loss:
+                break
 
 
 class DigitClassificationModel(object):
