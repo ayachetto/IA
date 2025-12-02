@@ -1,3 +1,6 @@
+# Aya Chetto (2194547)
+# Camille Ménard (2214742)
+
 import nn
 from backend import PerceptronDataset, RegressionDataset, DigitClassificationDataset
 
